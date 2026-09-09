@@ -20,8 +20,27 @@ import { NextResponse } from 'next/server';
  * TODO (A3): map known error types to proper status codes (400, 404, 409, ...)
  * TODO (A3): avoid leaking internal error details in responses
  */
-export function handleError(err: unknown): NextResponse {
-  console.error('Unhandled API error:', err);
 
+/**
+ * Thrown by validation code (see lib/validation.ts) when request input is
+ * malformed. Caught by handleError and mapped to a 400 response.
+ */
+export class ValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ValidationError';
+  }
+}
+
+export function handleError(err: unknown): NextResponse {
+  if (err instanceof ValidationError) {
+    return NextResponse.json({ error: err.message }, { status: 400 });
+  }
+
+  if (err instanceof SyntaxError) {
+    return NextResponse.json({ error: 'Request body must be valid JSON' }, { status: 400 });
+  }
+
+  console.error('Unhandled API error:', err);
   return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
 }
