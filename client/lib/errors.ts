@@ -41,6 +41,12 @@ export function handleError(err: unknown): NextResponse {
     return NextResponse.json({ error: 'Request body must be valid JSON' }, { status: 400 });
   }
 
+  // Postgres foreign key violation - e.g. a visit posted with a restaurantId
+  // that doesn't exist.
+  if (err instanceof Error && 'code' in err && (err as { code?: string }).code === '23503') {
+    return NextResponse.json({ error: 'Referenced restaurant does not exist' }, { status: 400 });
+  }
+
   console.error('Unhandled API error:', err);
   return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
 }

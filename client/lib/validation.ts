@@ -57,3 +57,50 @@ export function parseId(raw: string): number | null {
   const id = Number(raw);
   return id > 0 ? id : null;
 }
+
+export interface VisitInput {
+  restaurantId: number;
+  date: string;
+  amountSpent: number | null;
+  notes: string | null;
+}
+
+/**
+ * Validate and normalize a visit create/update body. Throws ValidationError
+ * (caught by handleError, mapped to 400) on bad input.
+ */
+export function validateVisitInput(body: unknown): VisitInput {
+  if (typeof body !== 'object' || body === null) {
+    throw new ValidationError('Request body must be a JSON object');
+  }
+
+  const { restaurantId, date, amountSpent, notes } = body as Record<string, unknown>;
+
+  if (typeof restaurantId !== 'number' || !Number.isInteger(restaurantId) || restaurantId <= 0) {
+    throw new ValidationError('restaurantId is required and must be a positive integer');
+  }
+
+  if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(Date.parse(date))) {
+    throw new ValidationError('date is required and must be a valid YYYY-MM-DD date');
+  }
+
+  if (amountSpent !== undefined && amountSpent !== null) {
+    if (typeof amountSpent !== 'number' || Number.isNaN(amountSpent)) {
+      throw new ValidationError('amountSpent must be a number');
+    }
+    if (amountSpent < 0) {
+      throw new ValidationError('amountSpent must be zero or greater');
+    }
+  }
+
+  if (notes !== undefined && notes !== null && typeof notes !== 'string') {
+    throw new ValidationError('notes must be a string');
+  }
+
+  return {
+    restaurantId,
+    date,
+    amountSpent: (amountSpent as number | null) ?? null,
+    notes: (notes as string | null) ?? null,
+  };
+}
